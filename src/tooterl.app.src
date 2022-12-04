@@ -1,0 +1,14 @@
+{application, tooterl,
+ [
+  {description, "An Erlang Mastodon API library"},
+  {vsn, "0.1"},
+  {modules, [
+             tooterl
+            ]},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {env, []}
+ ]}.
