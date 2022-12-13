@@ -1,5 +1,5 @@
 -module(tooterl).
--export([toot/3]).
+-export([toot/3, toot/4]).
 
 
 get_headers(AuthToken, ContentLength, ContentType) ->
@@ -38,6 +38,7 @@ upload_images(Images, AuthToken, Url)->
     
 
 upload_images([H|T], AuthToken, Url, Acc)->
+    io:format("~p~n", [H]),
     MediaId=upload_image(H, AuthToken, Url),
     NewAcc=lists:append(Acc, [MediaId]),
     upload_images(T, AuthToken, Url, NewAcc);
@@ -46,24 +47,31 @@ upload_images([], AuthToken, Url, Acc)->
 
 upload_image(Image, AuthToken, Url)->
 
-    
+    Boundary="===13978193024621189109088990673===",
+
+%    io:format("~p~n", [Image]),
     {ok, Media} = file:read_file(Image),
 
-    Params = [{"file", base64:decode_to_string(Media)}],
+    Params = [{"description", "an image"},{"file", base64:decode_to_string(base64:encode(Media))}],
     
-    MultiPartBody=generate_multipart__body(Params, "------boundary-----"),
+    MultiPartBody=generate_multipart__body(Params, Boundary),
 
-    Headers = get_headers(AuthToken, length(MultiPartBody), "multipart/form-data"),
+%    io:format("~s~n~n", [MultiPartBody]),
+    file:write_file("/tmp/multi", io_lib:fwrite("~s", [MultiPartBody])),
+    Headers = get_headers(AuthToken, length(MultiPartBody), string:concat("multipart/form-data; boundary=", Boundary)),
+    io:format("~p~n", [Headers]),
+
+
     {ok, Response} = httpc:request(post,
-				   {Url,
+				   {string:concat(Url, "/api/v1/media"),
 				    Headers,
 				    "multipart/form-data",
 				    MultiPartBody
-				   }, [], [{headers_as_is, true},{body_format, binary}]).
+				   }, [], [{body_format, binary}]).
 
 
 
-
+% {body_format, binary}
 generate_multipart__body(Params, Boundary)->
     generate_multipart__body(Params, Boundary, []).
 
@@ -71,8 +79,8 @@ generate_multipart__body([H|T], Boundary, Acc)->
     {Name, Value}=H,
     Prefix = string:concat(Acc, string:concat(string:concat(string:concat(string:concat("--", Boundary), "\r\nContent-Disposition: form-data; name=\""), Name), "\"")),
     case Name of
-	"media" ->
-	    MediaAcc=string:concat(Prefix,"; filename=\"foo1.png\"\nContent-Type: application/octet-stream");
+	"file" ->
+	    MediaAcc=string:concat(Prefix,"; filename=\"foo1.png\"\nContent-Type: image/png");
 	_ ->
 	    MediaAcc=Prefix
     end,
