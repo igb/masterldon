@@ -11,6 +11,16 @@ get_headers(AuthToken, ContentLength, ContentType) ->
      {"Content-Type",  ContentType}].
 
 
+
+
+get_secrets()->
+        {ok,[[AuthToken]]}=init:get_argument(auth_token),
+        {AuthToken}.
+
+
+
+
+
 toot(Status, AuthToken, Url)->
 
     Body=string:concat("status=", Status),
