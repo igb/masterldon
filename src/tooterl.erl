@@ -1,5 +1,5 @@
 -module(tooterl).
--export([toot/3, toot/4]).
+-export([toot/3, toot/4, get_secrets/0]).
 
 
 get_headers(AuthToken, ContentLength, ContentType) ->
