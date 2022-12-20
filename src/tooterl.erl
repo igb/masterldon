@@ -1,5 +1,5 @@
 -module(tooterl).
--export([toot/3, toot/4, get_secrets/0]).
+-export([toot/3, toot/4, get_secrets/0, get_statuses/3]).
 
 
 get_headers(AuthToken, ContentLength, ContentType) ->
@@ -38,6 +38,14 @@ toot(Status, AuthToken, Url)->
 		   "application/x-www-form-urlencoded",
 		   Body
 		  }, [], []).
+
+
+get_statuses(Id, AuthToken, Url)->
+    Headers = get_headers(AuthToken, 0, "text/html; charset=utf-8"),
+    {ok, {StatusLine, HttpHeader, HttpBodyResult}}=httpc:request(get,
+		  {string:concat(string:concat(string:concat(Url, "/api/v1/accounts/"), Id), "/statuses"),
+		   Headers }, [], []),
+    jsone:decode(list_to_binary(HttpBodyResult), [{object_format, tuple}]).
 
 
 toot(Status, Images, AuthToken, Url)->
