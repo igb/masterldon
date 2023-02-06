@@ -22,12 +22,13 @@ get_secrets()->
 
 
 toot(Status, AuthToken, Url)->
-
-    Body=string:concat("status=", Status),
+    EncodedStatus=escape_uri(Status),
+    
+    Body=string:concat("status=", EncodedStatus),
     
     Headers = get_headers(AuthToken, length(Body), "application/x-www-form-urlencoded"),
 
-    Params=[{"status", Status}],
+    Params=[{"status", EncodedStatus}],
 
 
     io:format("~p~n", [Headers]),
@@ -107,3 +108,33 @@ generate_multipart__body([H|T], Boundary, Acc)->
     generate_multipart__body(T, Boundary, NewAcc);
 generate_multipart__body([], Boundary, Acc) ->
     string:concat(Acc, string:concat(string:concat("--", Boundary), "--\r\n")).
+
+
+escape_uri([C | Cs]) when C >= $a, C =< $z ->
+    [C | escape_uri(Cs)];
+escape_uri([C | Cs]) when C >= $A, C =< $Z ->
+    [C | escape_uri(Cs)];
+escape_uri([C | Cs]) when C >= $0, C =< $9 ->
+    [C | escape_uri(Cs)];
+escape_uri([C = $. | Cs]) ->
+    [C | escape_uri(Cs)];
+escape_uri([C = $- | Cs]) ->
+    [C | escape_uri(Cs)];
+escape_uri([C = $_ | Cs]) ->
+    [C | escape_uri(Cs)];
+escape_uri([C | Cs]) when C > 16#7f ->
+    HexStr = integer_to_list(C, 16),
+    lists:flatten([$%, HexStr]) ++ escape_uri(Cs);
+escape_uri([C | Cs]) ->
+    escape_byte(C) ++ escape_uri(Cs);
+escape_uri([]) ->
+    [].
+
+escape_byte(C) when C >= 0, C =< 255 ->
+    [$%, hex_digit(C bsr 4), hex_digit(C band 15)].
+
+hex_digit(N) when N >= 0, N =< 9 ->
+    N + $0;
+hex_digit(N) when N > 9, N =< 15 ->
+    N + $A - 10.
+
